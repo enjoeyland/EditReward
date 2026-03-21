@@ -10,10 +10,10 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from genaibench.mllm_tools import MLLM_Models
 from genaibench.utils import load_template
-from datasets import load_dataset
 from PIL import Image
 import io
 from collections import defaultdict
+from dataset_loader import load_editreward_samples
 
 def run_pairwise_comparison_embedded(model, source_image, instruct_prompt, image_a, image_b, prompt_template, comparison_type):
     """Run a pairwise comparison between two embedded PIL images"""
@@ -237,11 +237,10 @@ def main(
     else:
         raise ValueError("Random mode not supported in parallel version")
     
-    # Load dataset from Hugging Face
-    print(f"\n📥 Loading dataset from Hugging Face...")
+    # Load dataset from Hugging Face or a local path
+    print(f"\n📥 Loading dataset...")
     try:
-        dataset = load_dataset(dataset_name)
-        all_data = [dataset['train'][i] for i in range(len(dataset['train']))]
+        all_data = load_editreward_samples(dataset_name)
         
         # Filter to only 3pair samples
         data = [sample for sample in all_data if sample['dataset'] == '3pair']

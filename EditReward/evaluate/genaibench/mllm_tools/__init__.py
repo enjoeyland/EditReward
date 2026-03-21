@@ -1,4 +1,4 @@
-MLLM_LIST = ["blip2", "instructblip", "llava", "openflamingo", "fuyu", "kosmos2", "qwenVL", "qwen2vl", "qwen2.5vl", "qwen2.5vl-3b", "qwen2.5-7b-instruct", "qwen2.5-32b-instruct", "cogvlm", "mfuyu", "mllava", "idefics2", "idefics1", "emu2", "otterimage", "ottervideo", "vila", "gpt4v", "gpt4o", "gpt5", "gpt5-eval2", "gpt-5-mini", "gemini", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro2", "gemini-2.5-pro3", "mantis", "videollava", "minicpmv", "phi35_vision", "llava_onevision", "mimovl"]
+MLLM_LIST = ["blip2", "instructblip", "llava", "openflamingo", "fuyu", "kosmos2", "qwenVL", "qwen2vl", "qwen2.5vl", "qwen2.5vl-3b", "qwen2.5-7b-instruct", "qwen2.5-32b-instruct", "qwen3.5", "qwen3.5-27b", "cogvlm", "mfuyu", "mllava", "idefics2", "idefics1", "emu2", "otterimage", "ottervideo", "vila", "gpt4v", "gpt4o", "gpt5", "gpt5-eval2", "gpt-5-mini", "gemini", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro2", "gemini-2.5-pro3", "mantis", "videollava", "minicpmv", "phi35_vision", "llava_onevision", "mimovl"]
 from functools import partial
 
 def get_mfuyu(model_name: str):
@@ -103,6 +103,9 @@ def MLLM_Models(model_name:str):
     elif model_name == "qwen2.5-32b-instruct":
         from .qwen2_5_3b_instruct_eval import Qwen2_5_32B_Instruct
         return Qwen2_5_32B_Instruct
+    elif model_name in {"qwen3.5", "qwen3.5-27b"}:
+        from .qwen3_5_eval import Qwen3_5
+        return Qwen3_5
     elif model_name == "cogvlm":
         from .cogvlm_eval import CogVLM
         return CogVLM

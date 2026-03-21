@@ -1,153 +1,173 @@
-# EditReward-Bench Evaluation Guide  
+# EditReward-Bench Evaluation Guide
 **(2-Pair, 3-Pair, 4-Pair Evaluation Using Our Framework)**
 
-This guide explains how to evaluate any multimodal LLM (GPT/Gemini/HuggingFace models) on EditReward-Bench using our `inference_2pair_hf.py` pipeline.
+This guide explains how to evaluate multimodal LLM judges on EditReward-Bench using the scripts under `evaluate/`.
 
 ---
 
-## 1. Overview
+## 1. New Features
+
+This evaluation folder now supports:
+
+1. `Qwen3.5` via an OpenAI-compatible API wrapper under `genaibench/mllm_tools/`
+2. loading the benchmark from either:
+   - Hugging Face dataset name like `TIGER-Lab/EditReward-Bench`
+   - a local dataset path passed to `--dataset_name`
+3. one-command evaluation over all pair settings with `run_all_pairs_hf.py`
+
+Supported registered model names:
+
+- `qwen3.5`
+- `qwen3.5-27b`
+
+---
+
+## 2. Overview
 
 The evaluation pipeline:
 
-1. Loads `TIGER-Lab/EditReward-Bench` from HuggingFace  
-2. Builds a multimodal prompt (instruction + images)  
-3. Calls your model through a wrapper under `mllm_tools/`  
-4. Compares model preference (A > B / B > A / A = B) with human votes  
-5. Reports accuracy + detailed JSON results  
+1. Loads EditReward-Bench from Hugging Face or a local path
+2. Builds a multimodal prompt with source image, edited candidates, and instruction
+3. Calls your judge model through a wrapper under `genaibench/mllm_tools/`
+4. Parses the final verdict like `A>B`, `B>A`, or `A=B`
+5. Reports accuracy and saves detailed JSON results
 
-Once your model wrapper is added, you can run:
+---
+
+## 3. Qwen3.5 Setup
+
+The current `qwen3.5` wrapper expects an OpenAI-compatible endpoint.
+
+Example environment:
 
 ```bash
-python inference_2pair_hf.py --model_name <your_model>
+export OPENAI_BASE_URL="http://localhost:8000/v1"
+export OPENAI_API_KEY="EMPTY"
+export QWEN3_5_MODEL_NAME="Qwen3.5-27B"
 ```
 
-Same process applies to 3-pair and 4-pair evaluation.
+If your served model name differs, change `QWEN3_5_MODEL_NAME` accordingly.
 
 ---
 
-## 2. Add Your Model to `mllm_tools`
+## 4. Run Single Pair Evaluation
 
-To evaluate a new model, simply:
-
-### **A. If your model is GPT/Gemini (API-based multimodal LLMs)**  
-👉 **Use these files as reference:**
-
-- `gpt5_eval.py`  
-- `gemini_25_flash_eval.py`
-
-These show how to:  
-- convert the input list of `{text, image}` into API format  
-- send requests to the model  
-- return the model’s final text output  
-
-Copy one of these files, modify API calls.
-
----
-
-### **B. If your model is a HuggingFace open-source MLLM**  
-👉 **Use the Qwen implementations as reference:**
-
-- `qwen2.5_eval.py`
-- (or any other Qwen eval file under mllm_tools)
-
-These examples show how to:  
-- load image/text inputs  
-- run the HF model in a multimodal forward pass  
-- extract the output string needed for evaluation  
-
----
-
-### **C. Register your model**
-
-After creating your wrapper, open:
-
-```
-EditReward/evaluate/genaibench/mllm_tools/__init__.py
-```
-
-Add your model to the registry, refer to:
-
-```python
-def MLLM_Models(model_name: str):
-    if model_name == "blip2":
-        from .blip_flant5_eval import BLIP_FLANT5
-        return BLIP_FLANT5
-
-    elif model_name == "gpt5":
-        from .gpt5_eval import GPT5_EvalModel
-        return GPT5_EvalModel
-```
-
-Now it becomes selectable via:
-
-```
---model_name your_model_name
-```
-
----
-
-## 3. Run the 2-Pair Evaluation
-
-### Quick test (small batch)
+### 2-pair quick test
 
 ```bash
-python inference_2pair_hf.py   --model_name your_model_name   --dataset_name TIGER-Lab/EditReward-Bench   --template pairwise_2pair   --max_examples 50   --results_dir results_test   --max_workers 8
+python inference_2pair_hf.py \
+  --model_name qwen3.5 \
+  --dataset_name TIGER-Lab/EditReward-Bench \
+  --max_examples 50 \
+  --results_dir results_test_2pair \
+  --max_workers 8 \
+  --overwrite
 ```
 
-### Full evaluation
+### 2-pair with a local dataset path
 
 ```bash
-python inference_2pair_hf.py   --model_name your_model_name   --dataset_name TIGER-Lab/EditReward-Bench   --template pairwise_2pair   --results_dir results_full   --max_workers 32   --overwrite True
+python inference_2pair_hf.py \
+  --model_name qwen3.5 \
+  --dataset_name /path/to/EditReward-Bench \
+  --max_examples 50 \
+  --results_dir results_local_2pair \
+  --max_workers 8 \
+  --overwrite
 ```
 
----
-
-## 4. Output & Results
-
-Results are saved in:
-
-```
-<results_dir>/<model_name>_pairwise_2pair_2pair_hf.json
-```
-
-The JSON file includes:
-
-- total examples  
-- correct predictions  
-- accuracy  
-- per-sample results including:
-  - instruction  
-  - human vote  
-  - model output  
-  - whether the model was correct  
-
-Perfect for benchmarking and comparing multiple models.
-
----
-
-## 5. 3-Pair & 4-Pair Evaluation
-
-The process is identical:
+### 3-pair
 
 ```bash
-python inference_3pair_hf.py --model_name your_model_name
-python inference_4pair_hf.py --model_name your_model_name
+python inference_3pair_hf.py \
+  --model_name qwen3.5 \
+  --dataset_name /path/to/EditReward-Bench \
+  --max_examples 20 \
+  --results_dir results_local_3pair \
+  --max_workers 8 \
+  --overwrite
 ```
 
-Your wrapper works for all three benchmarks.
+### 4-pair
+
+```bash
+python inference_4pair_hf.py \
+  --model_name qwen3.5 \
+  --dataset_name /path/to/EditReward-Bench \
+  --max_examples 20 \
+  --results_dir results_local_4pair \
+  --max_workers 8 \
+  --overwrite
+```
 
 ---
 
-## 6. Summary
+## 5. Run All Pairs
 
-To evaluate any model:
+Use `run_all_pairs_hf.py` to run `2pair`, `3pair`, and `4pair` in one command.
 
-1. **Write a wrapper**  
-   - GPT/Gemini → Copy from `gpt5_eval.py` / `gemini_25_flash_eval.py`  
-   - HuggingFace open-source → Copy and modify from Qwen eval files  
-2. **Register it** in `mllm_tools/__init__.py`  
-3. **Run the evaluation script**  
-4. **Read accuracy + JSON results**
+### Quick test
+
+```bash
+python run_all_pairs_hf.py \
+  --model_name qwen3.5 \
+  --dataset_name /path/to/EditReward-Bench \
+  --max_examples 20 \
+  --max_workers 8 \
+  --results_root results_qwen35_allpairs_test \
+  --overwrite
+```
+
+### Full run
+
+```bash
+python run_all_pairs_hf.py \
+  --model_name qwen3.5 \
+  --dataset_name /path/to/EditReward-Bench \
+  --max_workers 16 \
+  --results_root outputs/results_qwen35_allpairs_full \
+  --overwrite
+```
+
+You can also run only part of the benchmark:
+
+```bash
+python run_all_pairs_hf.py \
+  --model_name qwen3.5 \
+  --dataset_name /path/to/EditReward-Bench \
+  --pairs 2pair,3pair \
+  --max_examples 50 \
+  --max_workers 8 \
+  --results_root results_qwen35_partial \
+  --overwrite
+```
 
 ---
+
+## 6. Output Files
+
+Per-pair outputs are saved as:
+
+```bash
+<results_root>/<pair_type>/<model_name>_<template>_<pair_type>_hf.json
+```
+
+These JSON files include:
+
+- total examples
+- correct examples
+- accuracy or group accuracy
+- per-sample instruction
+- human vote
+- model response
+- parsed model vote
+- whether the prediction was correct
+
+---
+
+## 7. Notes
+
+- `--dataset_name` now accepts both a remote HF dataset name and a local dataset directory.
+- `run_all_pairs_hf.py` is intended for convenience and simply forwards shared arguments into the individual pair scripts.
+- Generated result directories should not be committed; they are treated as local experiment artifacts.
 

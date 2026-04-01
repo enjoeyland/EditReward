@@ -39,7 +39,8 @@ class HPSv3RewardInferencer():
         self.device = device
         self.use_special_tokens = model_config.use_special_tokens
 
-        state_dict = torch.load(checkpoint_path , map_location="cpu")
+        model.to(self.device)
+        state_dict = torch.load(checkpoint_path, map_location=self.device)
         if "model" in state_dict:
             state_dict = state_dict["model"]
         model.load_state_dict(state_dict, strict=False)
@@ -47,8 +48,6 @@ class HPSv3RewardInferencer():
 
         self.model = model
         self.processor = processor
-
-        self.model.to(self.device)
         self.data_config = data_config
 
     def _pad_sequence(self, sequences, attention_mask, max_len, padding_side='right'):

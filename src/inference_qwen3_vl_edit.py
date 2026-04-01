@@ -63,14 +63,18 @@ class EditRewardQwen3Inferencer:
         self.reward_dim = reward_dim
         self.rm_head_type = rm_head_type
 
+        model.to(self.device)
+
         full_ckpt = os.path.join(checkpoint_path, "model.pth")
         full_ckpt_safetensors = os.path.join(checkpoint_path, "model.safetensors")
 
         if os.path.exists(full_ckpt):
-            state_dict = torch.load(full_ckpt, map_location="cpu")
+            state_dict = torch.load(full_ckpt, map_location=self.device)
         elif os.path.exists(full_ckpt_safetensors):
             import safetensors.torch
-            state_dict = safetensors.torch.load_file(full_ckpt_safetensors, device="cpu")
+            state_dict = safetensors.torch.load_file(
+                full_ckpt_safetensors, device=self.device
+            )
         else:
             raise ValueError(f"Checkpoint not found at {checkpoint_path}")
 
@@ -81,7 +85,6 @@ class EditRewardQwen3Inferencer:
         model.eval()
         self.model = model
         self.processor = processor
-        self.model.to(self.device)
         self.data_config = data_config
 
     def _prepare_input(self, data):

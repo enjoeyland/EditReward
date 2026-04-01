@@ -97,8 +97,8 @@ import sys
 # Add project root to Python path (optional, for local development)
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
-from EditReward import EditRewardInferencer
-from EditReward.inference_vl_edit import EditRewardVLInferencer
+from src import EditRewardInferencer
+from src.inference_vl_edit import EditRewardVLInferencer
 
 # ------------------------------------------------------------------------------
 # Example script for evaluating edited images with EditReward

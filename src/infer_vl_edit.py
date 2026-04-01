@@ -5,13 +5,20 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch
-from EditReward.inference_qwen3_vl_edit import EditRewardQwen3Inferencer
+from src.inference_vl_edit import EditRewardVLInferencer
 
+
+# ------------------------------------------------------------------------------
+# Example script for evaluating edited images with EditReward (Unified VL)
+# ------------------------------------------------------------------------------
 
 CHECKPOINT_PATH = "your/local/path/to/checkpoint"
+# Use either:
+# - "config/EditReward-Qwen2.5-7B-VL.yaml"
+# - "config/EditReward-Qwen3-VL.yaml"
 CONFIG_PATH = "config/EditReward-Qwen3-VL.yaml"
 
-inferencer = EditRewardQwen3Inferencer(
+inferencer = EditRewardVLInferencer(
     config_path=CONFIG_PATH,
     checkpoint_path=CHECKPOINT_PATH,
     device="cuda",
@@ -36,6 +43,6 @@ if __name__ == "__main__":
     with torch.no_grad():
         rewards = inferencer.reward(prompts=prompts, image_src=image_src, image_paths=image_paths)
     scores = [float(r[0]) if hasattr(r, "__len__") else float(r) for r in rewards]
-    print(f"[Qwen3-VL Pairwise Inference] Image scores: {scores}")
+    print(f"[Unified VL Pairwise Inference] Image scores: {scores}")
 
 

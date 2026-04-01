@@ -6,17 +6,17 @@ from dataclasses import asdict
 from functools import partial
 import torch
 
-from EditReward.model.qwen_vl_trainer import get_reward_model_cls, is_qwen3_vl
-from EditReward.model.qwen2_5_vl_trainer import (
+from src.model.qwen_vl_trainer import get_reward_model_cls, is_qwen3_vl
+from src.model.qwen2_5_vl_trainer import (
     VLMRewardTrainer,
     compute_multi_attr_accuracy,
     PartialEmbeddingUpdateCallback,
 )
-from EditReward.dataset.pairwise_edit_dataset import PairwiseEditOriginalDataset
-from EditReward.dataset.data_collator_vl_edit import get_vl_data_collator
-from EditReward.utils.parser import ModelConfig, PEFTLoraConfig, TrainingConfig, DataConfig
-from EditReward.utils.training_utils import load_model_from_checkpoint, find_target_linear_names
-from EditReward.utils.parser import parse_args_with_yaml
+from src.dataset.pairwise_edit_dataset import PairwiseEditOriginalDataset
+from src.dataset.data_collator_vl_edit import get_vl_data_collator
+from src.utils.parser import ModelConfig, PEFTLoraConfig, TrainingConfig, DataConfig
+from src.utils.training_utils import load_model_from_checkpoint, find_target_linear_names
+from src.utils.parser import parse_args_with_yaml
 from transformers import AutoProcessor
 from peft import LoraConfig, get_peft_model
 from trl import get_kbit_device_map, get_quantization_config

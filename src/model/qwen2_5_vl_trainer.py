@@ -56,7 +56,7 @@ from transformers.trainer_callback import TrainerControl, TrainerState
 from transformers.trainer_pt_utils import nested_detach, find_batch_size
 from transformers.training_args import TrainingArguments
 from trl import RewardTrainer
-from EditReward.utils.training_utils import get_peft_state_non_lora_maybe_zero_3
+from src.utils.training_utils import get_peft_state_non_lora_maybe_zero_3
 
 class Qwen2_5_VLRewardModelBT_MultiHead(Qwen2_5_VLForConditionalGeneration):
     def __init__(

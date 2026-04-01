@@ -7,11 +7,11 @@ from typing import Optional, List, Union
 import numpy as np
 import pandas as pd
 import torch
-from EditReward.dataset.utils import process_vision_info
+from src.dataset.utils import process_vision_info
 from torch.utils.data import Dataset
 import torchvision.transforms.functional as F
 
-from EditReward.dataset.prompts import (
+from src.dataset.prompts import (
     INSTRUCTION_EDIT_FOLLOWING,
     INSTRUCTION_EDIT_QUALITY,
     INSTRUCTION_EDIT_OVERALL,

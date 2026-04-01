@@ -1,6 +1,6 @@
-from EditReward.dataset.data_collator_qwen_edit import QWen2_5_VLDataCollator
-from EditReward.dataset.data_collator_qwen3_edit import QWen3_VLDataCollator
-from EditReward.model.qwen_vl_trainer import is_qwen3_vl
+from src.dataset.data_collator_qwen_edit import QWen2_5_VLDataCollator
+from src.dataset.data_collator_qwen3_edit import QWen3_VLDataCollator
+from src.model.qwen_vl_trainer import is_qwen3_vl
 
 
 def get_vl_data_collator(

@@ -3,7 +3,7 @@ import sys
 # Add project root to Python path (optional, for local development)
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
-from EditReward import EditRewardInferencer
+from src import EditRewardInferencer
 
 # ------------------------------------------------------------------------------
 # Example script for evaluating edited images with EditReward

@@ -1,12 +1,12 @@
 import torch
 
-from EditReward.dataset.prompts import (
+from src.dataset.prompts import (
     INSTRUCTION_EDIT_FOLLOWING,
     INSTRUCTION_EDIT_QUALITY,
     INSTRUCTION_EDIT_OVERALL,
     INSTRUCTION_EDIT_OVERALL_DETAILED,
 )
-from EditReward.dataset.data_collator_qwen_edit import (
+from src.dataset.data_collator_qwen_edit import (
     prompt_with_special_token,
     prompt_without_special_token,
 )

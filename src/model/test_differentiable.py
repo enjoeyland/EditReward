@@ -5,10 +5,10 @@ import torch
 import numpy as np
 from PIL import Image
 import huggingface_hub
-from EditReward.dataset.utils import process_vision_info
-from EditReward.dataset.data_collator_qwen_edit import prompt_with_special_token, prompt_without_special_token, INSTRUCTION
-from EditReward.utils.parser import ModelConfig, PEFTLoraConfig, TrainingConfig, DataConfig, parse_args_with_yaml
-from EditReward.train_qwen2_5_edit import create_model_and_processor
+from src.dataset.utils import process_vision_info
+from src.dataset.data_collator_qwen_edit import prompt_with_special_token, prompt_without_special_token, INSTRUCTION
+from src.utils.parser import ModelConfig, PEFTLoraConfig, TrainingConfig, DataConfig, parse_args_with_yaml
+from src.train_qwen2_5_edit import create_model_and_processor
 from pathlib import Path
 
 _MODEL_CONFIG_PATH = Path(__file__).parent / f"config/"

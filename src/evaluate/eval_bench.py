@@ -10,7 +10,7 @@ import numpy as np
 from itertools import combinations
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from EditReward import EditRewardInferencer
+from src import EditRewardInferencer
 
 def suff_stats(h, m, epsilon):
     """

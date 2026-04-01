@@ -6,21 +6,21 @@ from dataclasses import asdict
 from functools import partial
 import torch
 import torch.distributed as dist
-from EditReward.model.qwen2_5_vl_trainer import (
+from src.model.qwen2_5_vl_trainer import (
     Qwen2_5_VLRewardModelBT_MultiHead,
     VLMRewardTrainer,
     compute_multi_attr_accuracy,
     PartialEmbeddingUpdateCallback,
 )
-from EditReward.dataset.pairwise_edit_dataset import PairwiseEditOriginalDataset
-from EditReward.dataset.data_collator_qwen_edit import QWen2_5_VLDataCollator
-from EditReward.utils.parser import ModelConfig, PEFTLoraConfig, TrainingConfig, DataConfig
-from EditReward.utils.training_utils import load_model_from_checkpoint, find_target_linear_names
-from EditReward.utils.parser import parse_args_with_yaml
+from src.dataset.pairwise_edit_dataset import PairwiseEditOriginalDataset
+from src.dataset.data_collator_qwen_edit import QWen2_5_VLDataCollator
+from src.utils.parser import ModelConfig, PEFTLoraConfig, TrainingConfig, DataConfig
+from src.utils.training_utils import load_model_from_checkpoint, find_target_linear_names
+from src.utils.parser import parse_args_with_yaml
 from transformers import AutoProcessor
 from peft import LoraConfig, get_peft_model
 from trl import get_kbit_device_map, get_quantization_config
-from EditReward.model.differentiable_image_processor import Qwen2VLImageProcessor
+from src.model.differentiable_image_processor import Qwen2VLImageProcessor
 try:
     import flash_attn
 except ImportError:

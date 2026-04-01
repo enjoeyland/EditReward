@@ -57,6 +57,7 @@ class EditRewardInferencer:
         differentiable=False,
         reward_dim="dim1",
         rm_head_type="ranknet_multi_head",
+        cache_dir=None,
     ):
         if config_path is None:
             config_path = os.path.join(_MODEL_CONFIG_PATH, config_path)
@@ -78,6 +79,7 @@ class EditRewardInferencer:
             peft_lora_config=peft_lora_config,
             training_args=training_args,
             differentiable=differentiable,
+            cache_dir=cache_dir,
         )
 
         self.device = device

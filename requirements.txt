@@ -1,0 +1,21 @@
+# python 3.10
+typing-extensions>=4.10
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch>=2.0.0+cu128
+torchvision>=0.17.0+cu128
+transformers==4.56.1
+trl==0.8.6
+datasets
+openai
+scipy
+deepspeed
+peft
+megfile
+fire
+omegaconf
+matplotlib
+rich
+tensorboard
+sentencepiece
+accelerate
+pillow

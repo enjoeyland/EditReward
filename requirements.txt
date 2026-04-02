@@ -19,3 +19,4 @@ tensorboard
 sentencepiece
 accelerate
 pillow
+-e ../Inferences

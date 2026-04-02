@@ -1,15 +1,8 @@
-import os
-import sys
 import time
 import torch
 from pathlib import Path
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeRemainingColumn
 from torch.utils.data import DataLoader
-
-_REPO = Path(__file__).resolve().parent.parent
-_INF = _REPO / "Inferences"
-if str(_INF) not in sys.path:
-    sys.path.insert(0, str(_INF))
 
 from datamodules.omniedit import OmniEditLocalDataset
 from datamodules.saved_edits import PairedPredGtDataset
@@ -32,6 +25,7 @@ def main():
     # =========================================================
     # [1] Path settings (aligned with my_edit_reward.py)
     # =========================================================
+    _REPO = Path(__file__).resolve().parent
     _SUB = Path(__file__).resolve().parent
     _CKPT_SLUG = "TIGER-Lab__EditReward-MiMo-VL-7B-SFT-2508"
     _LOCAL_CKPT = _REPO / ".checkpoints" / _CKPT_SLUG

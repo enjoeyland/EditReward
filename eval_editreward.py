@@ -1,17 +1,41 @@
+import argparse
 import time
-import torch
 from pathlib import Path
+from typing import cast
+
+import torch
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeRemainingColumn
 from torch.utils.data import DataLoader
 
-from datamodules.omniedit import OmniEditLocalDataset
-from datamodules.saved_edits import PairedPredGtDataset
+from omegaconf import DictConfig, OmegaConf
+from huggingface_hub import hf_hub_download
+
+from datamodules import MagicBrushLocalDataset, OmniEditLocalDataset, PairedPredGtDataset
+from utils.core import resolve_edit_save_root
 from utils.sample_metrics_sqlite import SampleMetricsStore
 
 from src import EditRewardInferencer
 
+_EDIT = Path(__file__).resolve().parent
+_REPO = _EDIT.parent
+_INF = _REPO / "Inferences"
+
 EDITREWARD_METRIC_FOLLOW = "editreward/following"
 EDITREWARD_METRIC_QUALITY = "editreward/quality"
+
+def _config_stems(config_subdir: str) -> list[str]:
+    d = _INF / "config" / config_subdir
+    if not d.is_dir():
+        return []
+    return sorted(p.stem for p in d.glob("*.yaml") if p.is_file())
+
+
+def _load_model_dataset_cfg(model_name: str, dataset_name: str) -> tuple[DictConfig, DictConfig]:
+    cfg_dir = _INF / "config"
+    model_cfg = cast(DictConfig, OmegaConf.load(cfg_dir / "models" / f"{model_name}.yaml"))
+    dataset_cfg = cast(DictConfig, OmegaConf.load(cfg_dir / "datasets" / f"{dataset_name}.yaml"))
+    return model_cfg, dataset_cfg
+
 
 def collate_fn(batch):
     return {
@@ -21,46 +45,58 @@ def collate_fn(batch):
         "result_path": [b["edited_path"] for b in batch],
     }
 
+
 def main():
-    # =========================================================
-    # [1] Path settings (aligned with my_edit_reward.py)
-    # =========================================================
-    _REPO = Path(__file__).resolve().parent
-    _SUB = Path(__file__).resolve().parent
+    models = _config_stems("models")
+    datasets = _config_stems("datasets")
+    if not models or not datasets:
+        raise SystemExit(f"Missing YAML under {_INF / 'config'}: models={models!r} datasets={datasets!r}")
+
+    p = argparse.ArgumentParser(description="EditReward batch eval on paired GT + inference PNGs (paths from Inferences/config).")
+    p.add_argument("--dataset", choices=datasets, default="omniedit", help="Inferences/config/datasets/<name>.yaml")
+    p.add_argument("--model", choices=models, default="flux_kontext", help="Inferences/config/models/<name>.yaml")
+    p.add_argument("--sample-id-start", type=int, default=0, help="Half-open lower bound [start, end) for dataset filter.")
+    p.add_argument("--sample-id-end", type=int, default=20000, help="Half-open upper bound (exclusive).")
+    args = p.parse_args()
+
+    model_cfg, dataset_cfg = _load_model_dataset_cfg(args.model, args.dataset)
+    base_folder = str((_REPO / str(dataset_cfg.local.root)).resolve())
+    result_folder = str(resolve_edit_save_root("dist", model_cfg, dataset_cfg))
+
     _CKPT_SLUG = "TIGER-Lab__EditReward-MiMo-VL-7B-SFT-2508"
-    _LOCAL_CKPT = _REPO / ".checkpoints" / _CKPT_SLUG
-
-    base_folder = str(_REPO / "datasets" / "OmniEdit")
-    result_folder = str(_REPO / "dist" / "model1_flux_kontext" / "OmniEdit_Result")
-
-    config_path = str(_SUB / "src" / "config" / "EditReward-MiMo-VL-7B-SFT-2508.yaml")
+    _LOCAL_CKPT = _EDIT / ".checkpoints" / _CKPT_SLUG
+    config_path = str(_EDIT / "src" / "config" / "EditReward-MiMo-VL-7B-SFT-2508.yaml")
     checkpoint_path = str(_LOCAL_CKPT)
-    cache_dir = str(_REPO / ".cache")
+    cache_dir = str(_EDIT / ".cache")
 
-    # =========================================================
-    # [2] Runtime options
-    # =========================================================
+    _HF_REPO = "TIGER-Lab/EditReward-MiMo-VL-7B-SFT-2508"
+    hf_hub_download(repo_id=_HF_REPO, filename="model.safetensors", local_dir=str(_LOCAL_CKPT))
+
     batch_size = 1
     num_workers = 4
+    sample_id_start = args.sample_id_start
+    sample_id_end = args.sample_id_end
 
-    # =========================================================
-    # [4] Gather valid samples (OmniEdit GT + PairedPredGtDataset, as_paths=True)
-    # =========================================================
+    ds_name = str(dataset_cfg.name).lower()
+    if ds_name == "omniedit":
+        gt_ds = OmniEditLocalDataset(base_folder, sample_id_start, sample_id_end, as_paths=True)
+    elif ds_name == "magicbrush":
+        gt_ds = MagicBrushLocalDataset(base_folder, sample_id_start, sample_id_end, as_paths=True)
+    else:
+        raise SystemExit(f"Unsupported dataset.name={dataset_cfg.name!r} (add branch or use omniedit/magicbrush).")
+
     print("=" * 100)
-    print("[1/5] Pairing GT (OmniEdit) with prediction PNGs...")
-    print(f"base_folder   : {base_folder}")
-    print(f"result_folder : {result_folder}")
+    print("[1/5] Pairing GT with prediction PNGs...")
+    print(f"dataset       : {args.dataset} (root={base_folder})")
+    print(f"model         : {args.model} (pred_dir={result_folder})")
+    print(f"sample_id     : [{sample_id_start}, {sample_id_end})")
     print("=" * 100)
 
-    gt_ds = OmniEditLocalDataset(base_folder, 0, 20000, as_paths=True)
     paired = PairedPredGtDataset(gt_ds, result_folder, as_paths=True)
     assert len(paired) > 0, "No paired samples found"
 
     dataloader = DataLoader(paired, batch_size=batch_size, shuffle=False, num_workers=num_workers, collate_fn=collate_fn)
 
-    # =========================================================
-    # [5] Load inferencer
-    # =========================================================
     print("=" * 100)
     print("[2/5] Loading EditReward inferencer...")
     print(f"config_path     : {config_path}")
@@ -81,14 +117,11 @@ def main():
         db_path=db_path,
         run_id=metrics_run_id,
         task="edit_score",
-        model="flux_kontext",
-        dataset="omniedit",
+        model=str(model_cfg.name),
+        dataset=str(dataset_cfg.name),
     )
     print(f"Sample metrics DB: {db_path} (run_id={metrics_run_id})")
 
-    # =========================================================
-    # [6] Evaluate in batches, save each sample immediately
-    # =========================================================
     print("=" * 100)
     print("[3/5] Starting evaluation...")
     print("=" * 100)
@@ -121,11 +154,11 @@ def main():
                         EDITREWARD_METRIC_QUALITY: float(row[1]),
                     }
                 )
-            
+
             follow_avg = float(r[:, 0].mean())
             quality_avg = float(r[:, 1].mean())
             progress.update(task_id, advance=1, follow=follow_avg, quality=quality_avg)
-    
+
 
 if __name__ == "__main__":
     main()

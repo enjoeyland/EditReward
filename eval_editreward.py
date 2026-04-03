@@ -61,16 +61,14 @@ def main():
 
     model_cfg, dataset_cfg = _load_model_dataset_cfg(args.model, args.dataset)
     base_folder = str((_REPO / str(dataset_cfg.local.root)).resolve())
-    result_folder = str(resolve_edit_save_root("dist", model_cfg, dataset_cfg))
+    result_folder = str(resolve_edit_save_root(_REPO / "dist", model_cfg, dataset_cfg))
 
-    _CKPT_SLUG = "TIGER-Lab__EditReward-MiMo-VL-7B-SFT-2508"
-    _LOCAL_CKPT = _EDIT / ".checkpoints" / _CKPT_SLUG
     config_path = str(_EDIT / "src" / "config" / "EditReward-MiMo-VL-7B-SFT-2508.yaml")
-    checkpoint_path = str(_LOCAL_CKPT)
-    cache_dir = str(_EDIT / ".cache")
+    checkpoint_path = str(_REPO / ".checkpoints" / "TIGER-Lab__EditReward-MiMo-VL-7B-SFT-2508")
+    cache_dir = str(_REPO / ".cache")
 
     _HF_REPO = "TIGER-Lab/EditReward-MiMo-VL-7B-SFT-2508"
-    hf_hub_download(repo_id=_HF_REPO, filename="model.safetensors", local_dir=str(_LOCAL_CKPT))
+    hf_hub_download(repo_id=_HF_REPO, filename="model.safetensors", local_dir=checkpoint_path)
 
     batch_size = 1
     num_workers = 4
@@ -87,8 +85,9 @@ def main():
 
     print("=" * 100)
     print("[1/5] Pairing GT with prediction PNGs...")
-    print(f"dataset       : {args.dataset} (root={base_folder})")
+    print(f"dataset       : {args.dataset} (root={base_folder}")
     print(f"model         : {args.model} (pred_dir={result_folder})")
+    print(f"# of samples  : {len(gt_ds)}")
     print(f"sample_id     : [{sample_id_start}, {sample_id_end})")
     print("=" * 100)
 
@@ -101,6 +100,7 @@ def main():
     print("[2/5] Loading EditReward inferencer...")
     print(f"config_path     : {config_path}")
     print(f"checkpoint_path : {checkpoint_path}")
+    print(f"cache_dir       : {cache_dir}")
     print("=" * 100)
 
     inferencer = EditRewardInferencer(

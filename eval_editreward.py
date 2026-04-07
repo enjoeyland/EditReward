@@ -1,11 +1,12 @@
 import argparse
+import sys
 import time
 from pathlib import Path
 from typing import cast
 
 import torch
-from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeRemainingColumn
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from omegaconf import DictConfig, OmegaConf
 from huggingface_hub import hf_hub_download
@@ -57,6 +58,16 @@ def main():
     p.add_argument("--model", choices=models, default="flux_kontext", help="Inferences/config/models/<name>.yaml")
     p.add_argument("--sample-id-start", type=int, default=0, help="Half-open lower bound [start, end) for dataset filter.")
     p.add_argument("--sample-id-end", type=int, default=20000, help="Half-open upper bound (exclusive).")
+    p.add_argument(
+        "--progress-log-interval",
+        type=float,
+        default=0,
+        metavar="N",
+        help=(
+            "tqdm miniters: min iterations between progress/log updates. "
+            "Larger → fewer lines. 0 → omit (tqdm default). See tqdm std.py (miniters)."
+        ),
+    )
     args = p.parse_args()
 
     model_cfg, dataset_cfg = _load_model_dataset_cfg(args.model, args.dataset)
@@ -126,38 +137,36 @@ def main():
     print("[3/5] Starting evaluation...")
     print("=" * 100)
 
-    n_batches = len(dataloader)
-    with Progress(
-        TextColumn("[bold]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        TextColumn("[bold magenta]{task.completed}/{task.total}"),
-        TimeRemainingColumn(),
-        TextColumn("[cyan]follow={task.fields[follow]:.4f}"),
-        TextColumn("[cyan]quality={task.fields[quality]:.4f}"),
-    ) as progress:
-        task_id = progress.add_task("Evaluating", total=n_batches, follow=0.0, quality=0.0)
-        for batch in dataloader:
-            with torch.no_grad():
-                rewards = inferencer.reward(
-                    prompts=batch["prompt"],
-                    image_src=batch["source_path"],
-                    image_paths=batch["result_path"],
-                )
-            r = rewards.detach().float().cpu()
+    pbar = tqdm(
+        dataloader,
+        total=len(dataloader),
+        desc="Evaluating",
+        unit="batch",
+        file=sys.stdout,
+        miniters=args.progress_log_interval,
+        dynamic_ncols=True,
+    )
+    for batch in pbar:
+        with torch.no_grad():
+            rewards = inferencer.reward(
+                prompts=batch["prompt"],
+                image_src=batch["source_path"],
+                image_paths=batch["result_path"],
+            )
+        r = rewards.detach().float().cpu()
 
-            for sid, row in zip(batch["sample_id"], r):
-                metrics_store.upsert_many(
-                    {
-                        "sample_id": str(sid),
-                        EDITREWARD_METRIC_FOLLOW: float(row[0]),
-                        EDITREWARD_METRIC_QUALITY: float(row[1]),
-                    }
-                )
+        for sid, row in zip(batch["sample_id"], r):
+            metrics_store.upsert_many(
+                {
+                    "sample_id": str(sid),
+                    EDITREWARD_METRIC_FOLLOW: float(row[0]),
+                    EDITREWARD_METRIC_QUALITY: float(row[1]),
+                }
+            )
 
-            follow_avg = float(r[:, 0].mean())
-            quality_avg = float(r[:, 1].mean())
-            progress.update(task_id, advance=1, follow=follow_avg, quality=quality_avg)
+        follow_avg = float(r[:, 0].mean())
+        quality_avg = float(r[:, 1].mean())
+        pbar.set_postfix(follow=f"{follow_avg:.4f}", quality=f"{quality_avg:.4f}")
 
 
 if __name__ == "__main__":
